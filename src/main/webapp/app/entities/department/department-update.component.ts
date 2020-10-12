@@ -37,7 +37,7 @@ export class DepartmentUpdateComponent implements OnInit {
       this.updateForm(department);
 
       this.locationService
-        .query({ filter: 'department-is-null' })
+        .query({ 'departmentId.specified': 'false' })
         .pipe(
           map((res: HttpResponse<ILocation[]>) => {
             return res.body || [];

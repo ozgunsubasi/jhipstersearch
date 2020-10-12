@@ -2,8 +2,12 @@ package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.Department;
+import com.mycompany.ozgun.search.domain.Location;
+import com.mycompany.ozgun.search.domain.Employee;
 import com.mycompany.ozgun.search.repository.DepartmentRepository;
 import com.mycompany.ozgun.search.service.DepartmentService;
+import com.mycompany.ozgun.search.service.dto.DepartmentCriteria;
+import com.mycompany.ozgun.search.service.DepartmentQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +42,9 @@ public class DepartmentResourceIT {
 
     @Autowired
     private DepartmentService departmentService;
+
+    @Autowired
+    private DepartmentQueryService departmentQueryService;
 
     @Autowired
     private EntityManager em;
@@ -158,6 +165,178 @@ public class DepartmentResourceIT {
             .andExpect(jsonPath("$.id").value(department.getId().intValue()))
             .andExpect(jsonPath("$.departmentName").value(DEFAULT_DEPARTMENT_NAME));
     }
+
+
+    @Test
+    @Transactional
+    public void getDepartmentsByIdFiltering() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        Long id = department.getId();
+
+        defaultDepartmentShouldBeFound("id.equals=" + id);
+        defaultDepartmentShouldNotBeFound("id.notEquals=" + id);
+
+        defaultDepartmentShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultDepartmentShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultDepartmentShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultDepartmentShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByDepartmentNameIsEqualToSomething() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        // Get all the departmentList where departmentName equals to DEFAULT_DEPARTMENT_NAME
+        defaultDepartmentShouldBeFound("departmentName.equals=" + DEFAULT_DEPARTMENT_NAME);
+
+        // Get all the departmentList where departmentName equals to UPDATED_DEPARTMENT_NAME
+        defaultDepartmentShouldNotBeFound("departmentName.equals=" + UPDATED_DEPARTMENT_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByDepartmentNameIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        // Get all the departmentList where departmentName not equals to DEFAULT_DEPARTMENT_NAME
+        defaultDepartmentShouldNotBeFound("departmentName.notEquals=" + DEFAULT_DEPARTMENT_NAME);
+
+        // Get all the departmentList where departmentName not equals to UPDATED_DEPARTMENT_NAME
+        defaultDepartmentShouldBeFound("departmentName.notEquals=" + UPDATED_DEPARTMENT_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByDepartmentNameIsInShouldWork() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        // Get all the departmentList where departmentName in DEFAULT_DEPARTMENT_NAME or UPDATED_DEPARTMENT_NAME
+        defaultDepartmentShouldBeFound("departmentName.in=" + DEFAULT_DEPARTMENT_NAME + "," + UPDATED_DEPARTMENT_NAME);
+
+        // Get all the departmentList where departmentName equals to UPDATED_DEPARTMENT_NAME
+        defaultDepartmentShouldNotBeFound("departmentName.in=" + UPDATED_DEPARTMENT_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByDepartmentNameIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        // Get all the departmentList where departmentName is not null
+        defaultDepartmentShouldBeFound("departmentName.specified=true");
+
+        // Get all the departmentList where departmentName is null
+        defaultDepartmentShouldNotBeFound("departmentName.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllDepartmentsByDepartmentNameContainsSomething() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        // Get all the departmentList where departmentName contains DEFAULT_DEPARTMENT_NAME
+        defaultDepartmentShouldBeFound("departmentName.contains=" + DEFAULT_DEPARTMENT_NAME);
+
+        // Get all the departmentList where departmentName contains UPDATED_DEPARTMENT_NAME
+        defaultDepartmentShouldNotBeFound("departmentName.contains=" + UPDATED_DEPARTMENT_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByDepartmentNameNotContainsSomething() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+
+        // Get all the departmentList where departmentName does not contain DEFAULT_DEPARTMENT_NAME
+        defaultDepartmentShouldNotBeFound("departmentName.doesNotContain=" + DEFAULT_DEPARTMENT_NAME);
+
+        // Get all the departmentList where departmentName does not contain UPDATED_DEPARTMENT_NAME
+        defaultDepartmentShouldBeFound("departmentName.doesNotContain=" + UPDATED_DEPARTMENT_NAME);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByLocationIsEqualToSomething() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+        Location location = LocationResourceIT.createEntity(em);
+        em.persist(location);
+        em.flush();
+        department.setLocation(location);
+        departmentRepository.saveAndFlush(department);
+        Long locationId = location.getId();
+
+        // Get all the departmentList where location equals to locationId
+        defaultDepartmentShouldBeFound("locationId.equals=" + locationId);
+
+        // Get all the departmentList where location equals to locationId + 1
+        defaultDepartmentShouldNotBeFound("locationId.equals=" + (locationId + 1));
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllDepartmentsByEmployeeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        departmentRepository.saveAndFlush(department);
+        Employee employee = EmployeeResourceIT.createEntity(em);
+        em.persist(employee);
+        em.flush();
+        department.addEmployee(employee);
+        departmentRepository.saveAndFlush(department);
+        Long employeeId = employee.getId();
+
+        // Get all the departmentList where employee equals to employeeId
+        defaultDepartmentShouldBeFound("employeeId.equals=" + employeeId);
+
+        // Get all the departmentList where employee equals to employeeId + 1
+        defaultDepartmentShouldNotBeFound("employeeId.equals=" + (employeeId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultDepartmentShouldBeFound(String filter) throws Exception {
+        restDepartmentMockMvc.perform(get("/api/departments?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(department.getId().intValue())))
+            .andExpect(jsonPath("$.[*].departmentName").value(hasItem(DEFAULT_DEPARTMENT_NAME)));
+
+        // Check, that the count call also returns 1
+        restDepartmentMockMvc.perform(get("/api/departments/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultDepartmentShouldNotBeFound(String filter) throws Exception {
+        restDepartmentMockMvc.perform(get("/api/departments?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restDepartmentMockMvc.perform(get("/api/departments/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingDepartment() throws Exception {

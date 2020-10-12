@@ -59,7 +59,7 @@ export class JobHistoryUpdateComponent implements OnInit {
       this.updateForm(jobHistory);
 
       this.jobService
-        .query({ filter: 'jobhistory-is-null' })
+        .query({ 'jobHistoryId.specified': 'false' })
         .pipe(
           map((res: HttpResponse<IJob[]>) => {
             return res.body || [];
@@ -81,7 +81,7 @@ export class JobHistoryUpdateComponent implements OnInit {
         });
 
       this.departmentService
-        .query({ filter: 'jobhistory-is-null' })
+        .query({ 'jobHistoryId.specified': 'false' })
         .pipe(
           map((res: HttpResponse<IDepartment[]>) => {
             return res.body || [];
@@ -103,7 +103,7 @@ export class JobHistoryUpdateComponent implements OnInit {
         });
 
       this.employeeService
-        .query({ filter: 'jobhistory-is-null' })
+        .query({ 'jobHistoryId.specified': 'false' })
         .pipe(
           map((res: HttpResponse<IEmployee[]>) => {
             return res.body || [];

@@ -3,6 +3,8 @@ package com.mycompany.ozgun.search.web.rest;
 import com.mycompany.ozgun.search.domain.Department;
 import com.mycompany.ozgun.search.service.DepartmentService;
 import com.mycompany.ozgun.search.web.rest.errors.BadRequestAlertException;
+import com.mycompany.ozgun.search.service.dto.DepartmentCriteria;
+import com.mycompany.ozgun.search.service.DepartmentQueryService;
 
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -34,8 +36,11 @@ public class DepartmentResource {
 
     private final DepartmentService departmentService;
 
-    public DepartmentResource(DepartmentService departmentService) {
+    private final DepartmentQueryService departmentQueryService;
+
+    public DepartmentResource(DepartmentService departmentService, DepartmentQueryService departmentQueryService) {
         this.departmentService = departmentService;
+        this.departmentQueryService = departmentQueryService;
     }
 
     /**
@@ -81,12 +86,26 @@ public class DepartmentResource {
     /**
      * {@code GET  /departments} : get all the departments.
      *
+     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of departments in body.
      */
     @GetMapping("/departments")
-    public List<Department> getAllDepartments() {
-        log.debug("REST request to get all Departments");
-        return departmentService.findAll();
+    public ResponseEntity<List<Department>> getAllDepartments(DepartmentCriteria criteria) {
+        log.debug("REST request to get Departments by criteria: {}", criteria);
+        List<Department> entityList = departmentQueryService.findByCriteria(criteria);
+        return ResponseEntity.ok().body(entityList);
+    }
+
+    /**
+     * {@code GET  /departments/count} : count all the departments.
+     *
+     * @param criteria the criteria which the requested entities should match.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
+     */
+    @GetMapping("/departments/count")
+    public ResponseEntity<Long> countDepartments(DepartmentCriteria criteria) {
+        log.debug("REST request to count Departments by criteria: {}", criteria);
+        return ResponseEntity.ok().body(departmentQueryService.countByCriteria(criteria));
     }
 
     /**

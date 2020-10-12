@@ -2,8 +2,11 @@ package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.Country;
+import com.mycompany.ozgun.search.domain.Region;
 import com.mycompany.ozgun.search.repository.CountryRepository;
 import com.mycompany.ozgun.search.service.CountryService;
+import com.mycompany.ozgun.search.service.dto.CountryCriteria;
+import com.mycompany.ozgun.search.service.CountryQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +41,9 @@ public class CountryResourceIT {
 
     @Autowired
     private CountryService countryService;
+
+    @Autowired
+    private CountryQueryService countryQueryService;
 
     @Autowired
     private EntityManager em;
@@ -139,6 +145,158 @@ public class CountryResourceIT {
             .andExpect(jsonPath("$.id").value(country.getId().intValue()))
             .andExpect(jsonPath("$.countryName").value(DEFAULT_COUNTRY_NAME));
     }
+
+
+    @Test
+    @Transactional
+    public void getCountriesByIdFiltering() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        Long id = country.getId();
+
+        defaultCountryShouldBeFound("id.equals=" + id);
+        defaultCountryShouldNotBeFound("id.notEquals=" + id);
+
+        defaultCountryShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultCountryShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultCountryShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultCountryShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllCountriesByCountryNameIsEqualToSomething() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        // Get all the countryList where countryName equals to DEFAULT_COUNTRY_NAME
+        defaultCountryShouldBeFound("countryName.equals=" + DEFAULT_COUNTRY_NAME);
+
+        // Get all the countryList where countryName equals to UPDATED_COUNTRY_NAME
+        defaultCountryShouldNotBeFound("countryName.equals=" + UPDATED_COUNTRY_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllCountriesByCountryNameIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        // Get all the countryList where countryName not equals to DEFAULT_COUNTRY_NAME
+        defaultCountryShouldNotBeFound("countryName.notEquals=" + DEFAULT_COUNTRY_NAME);
+
+        // Get all the countryList where countryName not equals to UPDATED_COUNTRY_NAME
+        defaultCountryShouldBeFound("countryName.notEquals=" + UPDATED_COUNTRY_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllCountriesByCountryNameIsInShouldWork() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        // Get all the countryList where countryName in DEFAULT_COUNTRY_NAME or UPDATED_COUNTRY_NAME
+        defaultCountryShouldBeFound("countryName.in=" + DEFAULT_COUNTRY_NAME + "," + UPDATED_COUNTRY_NAME);
+
+        // Get all the countryList where countryName equals to UPDATED_COUNTRY_NAME
+        defaultCountryShouldNotBeFound("countryName.in=" + UPDATED_COUNTRY_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllCountriesByCountryNameIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        // Get all the countryList where countryName is not null
+        defaultCountryShouldBeFound("countryName.specified=true");
+
+        // Get all the countryList where countryName is null
+        defaultCountryShouldNotBeFound("countryName.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllCountriesByCountryNameContainsSomething() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        // Get all the countryList where countryName contains DEFAULT_COUNTRY_NAME
+        defaultCountryShouldBeFound("countryName.contains=" + DEFAULT_COUNTRY_NAME);
+
+        // Get all the countryList where countryName contains UPDATED_COUNTRY_NAME
+        defaultCountryShouldNotBeFound("countryName.contains=" + UPDATED_COUNTRY_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllCountriesByCountryNameNotContainsSomething() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+
+        // Get all the countryList where countryName does not contain DEFAULT_COUNTRY_NAME
+        defaultCountryShouldNotBeFound("countryName.doesNotContain=" + DEFAULT_COUNTRY_NAME);
+
+        // Get all the countryList where countryName does not contain UPDATED_COUNTRY_NAME
+        defaultCountryShouldBeFound("countryName.doesNotContain=" + UPDATED_COUNTRY_NAME);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllCountriesByRegionIsEqualToSomething() throws Exception {
+        // Initialize the database
+        countryRepository.saveAndFlush(country);
+        Region region = RegionResourceIT.createEntity(em);
+        em.persist(region);
+        em.flush();
+        country.setRegion(region);
+        countryRepository.saveAndFlush(country);
+        Long regionId = region.getId();
+
+        // Get all the countryList where region equals to regionId
+        defaultCountryShouldBeFound("regionId.equals=" + regionId);
+
+        // Get all the countryList where region equals to regionId + 1
+        defaultCountryShouldNotBeFound("regionId.equals=" + (regionId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultCountryShouldBeFound(String filter) throws Exception {
+        restCountryMockMvc.perform(get("/api/countries?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(country.getId().intValue())))
+            .andExpect(jsonPath("$.[*].countryName").value(hasItem(DEFAULT_COUNTRY_NAME)));
+
+        // Check, that the count call also returns 1
+        restCountryMockMvc.perform(get("/api/countries/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultCountryShouldNotBeFound(String filter) throws Exception {
+        restCountryMockMvc.perform(get("/api/countries?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restCountryMockMvc.perform(get("/api/countries/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingCountry() throws Exception {

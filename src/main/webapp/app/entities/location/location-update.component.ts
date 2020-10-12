@@ -40,7 +40,7 @@ export class LocationUpdateComponent implements OnInit {
       this.updateForm(location);
 
       this.countryService
-        .query({ filter: 'location-is-null' })
+        .query({ 'locationId.specified': 'false' })
         .pipe(
           map((res: HttpResponse<ICountry[]>) => {
             return res.body || [];

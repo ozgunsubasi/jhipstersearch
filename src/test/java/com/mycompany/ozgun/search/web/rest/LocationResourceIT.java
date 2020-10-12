@@ -2,8 +2,11 @@ package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.Location;
+import com.mycompany.ozgun.search.domain.Country;
 import com.mycompany.ozgun.search.repository.LocationRepository;
 import com.mycompany.ozgun.search.service.LocationService;
+import com.mycompany.ozgun.search.service.dto.LocationCriteria;
+import com.mycompany.ozgun.search.service.LocationQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +50,9 @@ public class LocationResourceIT {
 
     @Autowired
     private LocationService locationService;
+
+    @Autowired
+    private LocationQueryService locationQueryService;
 
     @Autowired
     private EntityManager em;
@@ -163,6 +169,395 @@ public class LocationResourceIT {
             .andExpect(jsonPath("$.city").value(DEFAULT_CITY))
             .andExpect(jsonPath("$.stateProvince").value(DEFAULT_STATE_PROVINCE));
     }
+
+
+    @Test
+    @Transactional
+    public void getLocationsByIdFiltering() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        Long id = location.getId();
+
+        defaultLocationShouldBeFound("id.equals=" + id);
+        defaultLocationShouldNotBeFound("id.notEquals=" + id);
+
+        defaultLocationShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultLocationShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultLocationShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultLocationShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStreetAddressIsEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where streetAddress equals to DEFAULT_STREET_ADDRESS
+        defaultLocationShouldBeFound("streetAddress.equals=" + DEFAULT_STREET_ADDRESS);
+
+        // Get all the locationList where streetAddress equals to UPDATED_STREET_ADDRESS
+        defaultLocationShouldNotBeFound("streetAddress.equals=" + UPDATED_STREET_ADDRESS);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStreetAddressIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where streetAddress not equals to DEFAULT_STREET_ADDRESS
+        defaultLocationShouldNotBeFound("streetAddress.notEquals=" + DEFAULT_STREET_ADDRESS);
+
+        // Get all the locationList where streetAddress not equals to UPDATED_STREET_ADDRESS
+        defaultLocationShouldBeFound("streetAddress.notEquals=" + UPDATED_STREET_ADDRESS);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStreetAddressIsInShouldWork() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where streetAddress in DEFAULT_STREET_ADDRESS or UPDATED_STREET_ADDRESS
+        defaultLocationShouldBeFound("streetAddress.in=" + DEFAULT_STREET_ADDRESS + "," + UPDATED_STREET_ADDRESS);
+
+        // Get all the locationList where streetAddress equals to UPDATED_STREET_ADDRESS
+        defaultLocationShouldNotBeFound("streetAddress.in=" + UPDATED_STREET_ADDRESS);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStreetAddressIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where streetAddress is not null
+        defaultLocationShouldBeFound("streetAddress.specified=true");
+
+        // Get all the locationList where streetAddress is null
+        defaultLocationShouldNotBeFound("streetAddress.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllLocationsByStreetAddressContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where streetAddress contains DEFAULT_STREET_ADDRESS
+        defaultLocationShouldBeFound("streetAddress.contains=" + DEFAULT_STREET_ADDRESS);
+
+        // Get all the locationList where streetAddress contains UPDATED_STREET_ADDRESS
+        defaultLocationShouldNotBeFound("streetAddress.contains=" + UPDATED_STREET_ADDRESS);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStreetAddressNotContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where streetAddress does not contain DEFAULT_STREET_ADDRESS
+        defaultLocationShouldNotBeFound("streetAddress.doesNotContain=" + DEFAULT_STREET_ADDRESS);
+
+        // Get all the locationList where streetAddress does not contain UPDATED_STREET_ADDRESS
+        defaultLocationShouldBeFound("streetAddress.doesNotContain=" + UPDATED_STREET_ADDRESS);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllLocationsByPostalCodeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where postalCode equals to DEFAULT_POSTAL_CODE
+        defaultLocationShouldBeFound("postalCode.equals=" + DEFAULT_POSTAL_CODE);
+
+        // Get all the locationList where postalCode equals to UPDATED_POSTAL_CODE
+        defaultLocationShouldNotBeFound("postalCode.equals=" + UPDATED_POSTAL_CODE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByPostalCodeIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where postalCode not equals to DEFAULT_POSTAL_CODE
+        defaultLocationShouldNotBeFound("postalCode.notEquals=" + DEFAULT_POSTAL_CODE);
+
+        // Get all the locationList where postalCode not equals to UPDATED_POSTAL_CODE
+        defaultLocationShouldBeFound("postalCode.notEquals=" + UPDATED_POSTAL_CODE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByPostalCodeIsInShouldWork() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where postalCode in DEFAULT_POSTAL_CODE or UPDATED_POSTAL_CODE
+        defaultLocationShouldBeFound("postalCode.in=" + DEFAULT_POSTAL_CODE + "," + UPDATED_POSTAL_CODE);
+
+        // Get all the locationList where postalCode equals to UPDATED_POSTAL_CODE
+        defaultLocationShouldNotBeFound("postalCode.in=" + UPDATED_POSTAL_CODE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByPostalCodeIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where postalCode is not null
+        defaultLocationShouldBeFound("postalCode.specified=true");
+
+        // Get all the locationList where postalCode is null
+        defaultLocationShouldNotBeFound("postalCode.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllLocationsByPostalCodeContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where postalCode contains DEFAULT_POSTAL_CODE
+        defaultLocationShouldBeFound("postalCode.contains=" + DEFAULT_POSTAL_CODE);
+
+        // Get all the locationList where postalCode contains UPDATED_POSTAL_CODE
+        defaultLocationShouldNotBeFound("postalCode.contains=" + UPDATED_POSTAL_CODE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByPostalCodeNotContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where postalCode does not contain DEFAULT_POSTAL_CODE
+        defaultLocationShouldNotBeFound("postalCode.doesNotContain=" + DEFAULT_POSTAL_CODE);
+
+        // Get all the locationList where postalCode does not contain UPDATED_POSTAL_CODE
+        defaultLocationShouldBeFound("postalCode.doesNotContain=" + UPDATED_POSTAL_CODE);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllLocationsByCityIsEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where city equals to DEFAULT_CITY
+        defaultLocationShouldBeFound("city.equals=" + DEFAULT_CITY);
+
+        // Get all the locationList where city equals to UPDATED_CITY
+        defaultLocationShouldNotBeFound("city.equals=" + UPDATED_CITY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByCityIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where city not equals to DEFAULT_CITY
+        defaultLocationShouldNotBeFound("city.notEquals=" + DEFAULT_CITY);
+
+        // Get all the locationList where city not equals to UPDATED_CITY
+        defaultLocationShouldBeFound("city.notEquals=" + UPDATED_CITY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByCityIsInShouldWork() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where city in DEFAULT_CITY or UPDATED_CITY
+        defaultLocationShouldBeFound("city.in=" + DEFAULT_CITY + "," + UPDATED_CITY);
+
+        // Get all the locationList where city equals to UPDATED_CITY
+        defaultLocationShouldNotBeFound("city.in=" + UPDATED_CITY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByCityIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where city is not null
+        defaultLocationShouldBeFound("city.specified=true");
+
+        // Get all the locationList where city is null
+        defaultLocationShouldNotBeFound("city.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllLocationsByCityContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where city contains DEFAULT_CITY
+        defaultLocationShouldBeFound("city.contains=" + DEFAULT_CITY);
+
+        // Get all the locationList where city contains UPDATED_CITY
+        defaultLocationShouldNotBeFound("city.contains=" + UPDATED_CITY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByCityNotContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where city does not contain DEFAULT_CITY
+        defaultLocationShouldNotBeFound("city.doesNotContain=" + DEFAULT_CITY);
+
+        // Get all the locationList where city does not contain UPDATED_CITY
+        defaultLocationShouldBeFound("city.doesNotContain=" + UPDATED_CITY);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStateProvinceIsEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where stateProvince equals to DEFAULT_STATE_PROVINCE
+        defaultLocationShouldBeFound("stateProvince.equals=" + DEFAULT_STATE_PROVINCE);
+
+        // Get all the locationList where stateProvince equals to UPDATED_STATE_PROVINCE
+        defaultLocationShouldNotBeFound("stateProvince.equals=" + UPDATED_STATE_PROVINCE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStateProvinceIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where stateProvince not equals to DEFAULT_STATE_PROVINCE
+        defaultLocationShouldNotBeFound("stateProvince.notEquals=" + DEFAULT_STATE_PROVINCE);
+
+        // Get all the locationList where stateProvince not equals to UPDATED_STATE_PROVINCE
+        defaultLocationShouldBeFound("stateProvince.notEquals=" + UPDATED_STATE_PROVINCE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStateProvinceIsInShouldWork() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where stateProvince in DEFAULT_STATE_PROVINCE or UPDATED_STATE_PROVINCE
+        defaultLocationShouldBeFound("stateProvince.in=" + DEFAULT_STATE_PROVINCE + "," + UPDATED_STATE_PROVINCE);
+
+        // Get all the locationList where stateProvince equals to UPDATED_STATE_PROVINCE
+        defaultLocationShouldNotBeFound("stateProvince.in=" + UPDATED_STATE_PROVINCE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStateProvinceIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where stateProvince is not null
+        defaultLocationShouldBeFound("stateProvince.specified=true");
+
+        // Get all the locationList where stateProvince is null
+        defaultLocationShouldNotBeFound("stateProvince.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllLocationsByStateProvinceContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where stateProvince contains DEFAULT_STATE_PROVINCE
+        defaultLocationShouldBeFound("stateProvince.contains=" + DEFAULT_STATE_PROVINCE);
+
+        // Get all the locationList where stateProvince contains UPDATED_STATE_PROVINCE
+        defaultLocationShouldNotBeFound("stateProvince.contains=" + UPDATED_STATE_PROVINCE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllLocationsByStateProvinceNotContainsSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+
+        // Get all the locationList where stateProvince does not contain DEFAULT_STATE_PROVINCE
+        defaultLocationShouldNotBeFound("stateProvince.doesNotContain=" + DEFAULT_STATE_PROVINCE);
+
+        // Get all the locationList where stateProvince does not contain UPDATED_STATE_PROVINCE
+        defaultLocationShouldBeFound("stateProvince.doesNotContain=" + UPDATED_STATE_PROVINCE);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllLocationsByCountryIsEqualToSomething() throws Exception {
+        // Initialize the database
+        locationRepository.saveAndFlush(location);
+        Country country = CountryResourceIT.createEntity(em);
+        em.persist(country);
+        em.flush();
+        location.setCountry(country);
+        locationRepository.saveAndFlush(location);
+        Long countryId = country.getId();
+
+        // Get all the locationList where country equals to countryId
+        defaultLocationShouldBeFound("countryId.equals=" + countryId);
+
+        // Get all the locationList where country equals to countryId + 1
+        defaultLocationShouldNotBeFound("countryId.equals=" + (countryId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultLocationShouldBeFound(String filter) throws Exception {
+        restLocationMockMvc.perform(get("/api/locations?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(location.getId().intValue())))
+            .andExpect(jsonPath("$.[*].streetAddress").value(hasItem(DEFAULT_STREET_ADDRESS)))
+            .andExpect(jsonPath("$.[*].postalCode").value(hasItem(DEFAULT_POSTAL_CODE)))
+            .andExpect(jsonPath("$.[*].city").value(hasItem(DEFAULT_CITY)))
+            .andExpect(jsonPath("$.[*].stateProvince").value(hasItem(DEFAULT_STATE_PROVINCE)));
+
+        // Check, that the count call also returns 1
+        restLocationMockMvc.perform(get("/api/locations/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultLocationShouldNotBeFound(String filter) throws Exception {
+        restLocationMockMvc.perform(get("/api/locations?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restLocationMockMvc.perform(get("/api/locations/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingLocation() throws Exception {

@@ -2,8 +2,11 @@ package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.Task;
+import com.mycompany.ozgun.search.domain.Job;
 import com.mycompany.ozgun.search.repository.TaskRepository;
 import com.mycompany.ozgun.search.service.TaskService;
+import com.mycompany.ozgun.search.service.dto.TaskCriteria;
+import com.mycompany.ozgun.search.service.TaskQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,9 @@ public class TaskResourceIT {
 
     @Autowired
     private TaskService taskService;
+
+    @Autowired
+    private TaskQueryService taskQueryService;
 
     @Autowired
     private EntityManager em;
@@ -147,6 +153,237 @@ public class TaskResourceIT {
             .andExpect(jsonPath("$.title").value(DEFAULT_TITLE))
             .andExpect(jsonPath("$.description").value(DEFAULT_DESCRIPTION));
     }
+
+
+    @Test
+    @Transactional
+    public void getTasksByIdFiltering() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        Long id = task.getId();
+
+        defaultTaskShouldBeFound("id.equals=" + id);
+        defaultTaskShouldNotBeFound("id.notEquals=" + id);
+
+        defaultTaskShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultTaskShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultTaskShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultTaskShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllTasksByTitleIsEqualToSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where title equals to DEFAULT_TITLE
+        defaultTaskShouldBeFound("title.equals=" + DEFAULT_TITLE);
+
+        // Get all the taskList where title equals to UPDATED_TITLE
+        defaultTaskShouldNotBeFound("title.equals=" + UPDATED_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByTitleIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where title not equals to DEFAULT_TITLE
+        defaultTaskShouldNotBeFound("title.notEquals=" + DEFAULT_TITLE);
+
+        // Get all the taskList where title not equals to UPDATED_TITLE
+        defaultTaskShouldBeFound("title.notEquals=" + UPDATED_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByTitleIsInShouldWork() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where title in DEFAULT_TITLE or UPDATED_TITLE
+        defaultTaskShouldBeFound("title.in=" + DEFAULT_TITLE + "," + UPDATED_TITLE);
+
+        // Get all the taskList where title equals to UPDATED_TITLE
+        defaultTaskShouldNotBeFound("title.in=" + UPDATED_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByTitleIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where title is not null
+        defaultTaskShouldBeFound("title.specified=true");
+
+        // Get all the taskList where title is null
+        defaultTaskShouldNotBeFound("title.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllTasksByTitleContainsSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where title contains DEFAULT_TITLE
+        defaultTaskShouldBeFound("title.contains=" + DEFAULT_TITLE);
+
+        // Get all the taskList where title contains UPDATED_TITLE
+        defaultTaskShouldNotBeFound("title.contains=" + UPDATED_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByTitleNotContainsSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where title does not contain DEFAULT_TITLE
+        defaultTaskShouldNotBeFound("title.doesNotContain=" + DEFAULT_TITLE);
+
+        // Get all the taskList where title does not contain UPDATED_TITLE
+        defaultTaskShouldBeFound("title.doesNotContain=" + UPDATED_TITLE);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllTasksByDescriptionIsEqualToSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where description equals to DEFAULT_DESCRIPTION
+        defaultTaskShouldBeFound("description.equals=" + DEFAULT_DESCRIPTION);
+
+        // Get all the taskList where description equals to UPDATED_DESCRIPTION
+        defaultTaskShouldNotBeFound("description.equals=" + UPDATED_DESCRIPTION);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByDescriptionIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where description not equals to DEFAULT_DESCRIPTION
+        defaultTaskShouldNotBeFound("description.notEquals=" + DEFAULT_DESCRIPTION);
+
+        // Get all the taskList where description not equals to UPDATED_DESCRIPTION
+        defaultTaskShouldBeFound("description.notEquals=" + UPDATED_DESCRIPTION);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByDescriptionIsInShouldWork() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where description in DEFAULT_DESCRIPTION or UPDATED_DESCRIPTION
+        defaultTaskShouldBeFound("description.in=" + DEFAULT_DESCRIPTION + "," + UPDATED_DESCRIPTION);
+
+        // Get all the taskList where description equals to UPDATED_DESCRIPTION
+        defaultTaskShouldNotBeFound("description.in=" + UPDATED_DESCRIPTION);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByDescriptionIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where description is not null
+        defaultTaskShouldBeFound("description.specified=true");
+
+        // Get all the taskList where description is null
+        defaultTaskShouldNotBeFound("description.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllTasksByDescriptionContainsSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where description contains DEFAULT_DESCRIPTION
+        defaultTaskShouldBeFound("description.contains=" + DEFAULT_DESCRIPTION);
+
+        // Get all the taskList where description contains UPDATED_DESCRIPTION
+        defaultTaskShouldNotBeFound("description.contains=" + UPDATED_DESCRIPTION);
+    }
+
+    @Test
+    @Transactional
+    public void getAllTasksByDescriptionNotContainsSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+
+        // Get all the taskList where description does not contain DEFAULT_DESCRIPTION
+        defaultTaskShouldNotBeFound("description.doesNotContain=" + DEFAULT_DESCRIPTION);
+
+        // Get all the taskList where description does not contain UPDATED_DESCRIPTION
+        defaultTaskShouldBeFound("description.doesNotContain=" + UPDATED_DESCRIPTION);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllTasksByJobIsEqualToSomething() throws Exception {
+        // Initialize the database
+        taskRepository.saveAndFlush(task);
+        Job job = JobResourceIT.createEntity(em);
+        em.persist(job);
+        em.flush();
+        task.addJob(job);
+        taskRepository.saveAndFlush(task);
+        Long jobId = job.getId();
+
+        // Get all the taskList where job equals to jobId
+        defaultTaskShouldBeFound("jobId.equals=" + jobId);
+
+        // Get all the taskList where job equals to jobId + 1
+        defaultTaskShouldNotBeFound("jobId.equals=" + (jobId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultTaskShouldBeFound(String filter) throws Exception {
+        restTaskMockMvc.perform(get("/api/tasks?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(task.getId().intValue())))
+            .andExpect(jsonPath("$.[*].title").value(hasItem(DEFAULT_TITLE)))
+            .andExpect(jsonPath("$.[*].description").value(hasItem(DEFAULT_DESCRIPTION)));
+
+        // Check, that the count call also returns 1
+        restTaskMockMvc.perform(get("/api/tasks/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultTaskShouldNotBeFound(String filter) throws Exception {
+        restTaskMockMvc.perform(get("/api/tasks?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restTaskMockMvc.perform(get("/api/tasks/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingTask() throws Exception {
