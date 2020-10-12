@@ -110,6 +110,6 @@ paginate Job with pagination
 
 // Set service options to all except few
 service all with serviceImpl except Employee, Job
-
+filter all
 // Set an angular suffix
 // angularSuffix * with mySuffix
