@@ -3,6 +3,8 @@ package com.mycompany.ozgun.search.web.rest;
 import com.mycompany.ozgun.search.domain.Task;
 import com.mycompany.ozgun.search.service.TaskService;
 import com.mycompany.ozgun.search.web.rest.errors.BadRequestAlertException;
+import com.mycompany.ozgun.search.service.dto.TaskCriteria;
+import com.mycompany.ozgun.search.service.TaskQueryService;
 
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -33,8 +35,11 @@ public class TaskResource {
 
     private final TaskService taskService;
 
-    public TaskResource(TaskService taskService) {
+    private final TaskQueryService taskQueryService;
+
+    public TaskResource(TaskService taskService, TaskQueryService taskQueryService) {
         this.taskService = taskService;
+        this.taskQueryService = taskQueryService;
     }
 
     /**
@@ -80,12 +85,26 @@ public class TaskResource {
     /**
      * {@code GET  /tasks} : get all the tasks.
      *
+     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of tasks in body.
      */
     @GetMapping("/tasks")
-    public List<Task> getAllTasks() {
-        log.debug("REST request to get all Tasks");
-        return taskService.findAll();
+    public ResponseEntity<List<Task>> getAllTasks(TaskCriteria criteria) {
+        log.debug("REST request to get Tasks by criteria: {}", criteria);
+        List<Task> entityList = taskQueryService.findByCriteria(criteria);
+        return ResponseEntity.ok().body(entityList);
+    }
+
+    /**
+     * {@code GET  /tasks/count} : count all the tasks.
+     *
+     * @param criteria the criteria which the requested entities should match.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
+     */
+    @GetMapping("/tasks/count")
+    public ResponseEntity<Long> countTasks(TaskCriteria criteria) {
+        log.debug("REST request to count Tasks by criteria: {}", criteria);
+        return ResponseEntity.ok().body(taskQueryService.countByCriteria(criteria));
     }
 
     /**

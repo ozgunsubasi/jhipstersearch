@@ -2,7 +2,12 @@ package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.Job;
+import com.mycompany.ozgun.search.domain.Task;
+import com.mycompany.ozgun.search.domain.Employee;
 import com.mycompany.ozgun.search.repository.JobRepository;
+import com.mycompany.ozgun.search.service.JobService;
+import com.mycompany.ozgun.search.service.dto.JobCriteria;
+import com.mycompany.ozgun.search.service.JobQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,15 +47,26 @@ public class JobResourceIT {
 
     private static final Long DEFAULT_MIN_SALARY = 1L;
     private static final Long UPDATED_MIN_SALARY = 2L;
+    private static final Long SMALLER_MIN_SALARY = 1L - 1L;
 
     private static final Long DEFAULT_MAX_SALARY = 1L;
     private static final Long UPDATED_MAX_SALARY = 2L;
+    private static final Long SMALLER_MAX_SALARY = 1L - 1L;
 
     @Autowired
     private JobRepository jobRepository;
 
     @Mock
     private JobRepository jobRepositoryMock;
+
+    @Mock
+    private JobService jobServiceMock;
+
+    @Autowired
+    private JobService jobService;
+
+    @Autowired
+    private JobQueryService jobQueryService;
 
     @Autowired
     private EntityManager em;
@@ -149,22 +165,22 @@ public class JobResourceIT {
     
     @SuppressWarnings({"unchecked"})
     public void getAllJobsWithEagerRelationshipsIsEnabled() throws Exception {
-        when(jobRepositoryMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
+        when(jobServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
 
         restJobMockMvc.perform(get("/api/jobs?eagerload=true"))
             .andExpect(status().isOk());
 
-        verify(jobRepositoryMock, times(1)).findAllWithEagerRelationships(any());
+        verify(jobServiceMock, times(1)).findAllWithEagerRelationships(any());
     }
 
     @SuppressWarnings({"unchecked"})
     public void getAllJobsWithEagerRelationshipsIsNotEnabled() throws Exception {
-        when(jobRepositoryMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
+        when(jobServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
 
         restJobMockMvc.perform(get("/api/jobs?eagerload=true"))
             .andExpect(status().isOk());
 
-        verify(jobRepositoryMock, times(1)).findAllWithEagerRelationships(any());
+        verify(jobServiceMock, times(1)).findAllWithEagerRelationships(any());
     }
 
     @Test
@@ -182,6 +198,390 @@ public class JobResourceIT {
             .andExpect(jsonPath("$.minSalary").value(DEFAULT_MIN_SALARY.intValue()))
             .andExpect(jsonPath("$.maxSalary").value(DEFAULT_MAX_SALARY.intValue()));
     }
+
+
+    @Test
+    @Transactional
+    public void getJobsByIdFiltering() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        Long id = job.getId();
+
+        defaultJobShouldBeFound("id.equals=" + id);
+        defaultJobShouldNotBeFound("id.notEquals=" + id);
+
+        defaultJobShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultJobShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultJobShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultJobShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobsByJobTitleIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where jobTitle equals to DEFAULT_JOB_TITLE
+        defaultJobShouldBeFound("jobTitle.equals=" + DEFAULT_JOB_TITLE);
+
+        // Get all the jobList where jobTitle equals to UPDATED_JOB_TITLE
+        defaultJobShouldNotBeFound("jobTitle.equals=" + UPDATED_JOB_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByJobTitleIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where jobTitle not equals to DEFAULT_JOB_TITLE
+        defaultJobShouldNotBeFound("jobTitle.notEquals=" + DEFAULT_JOB_TITLE);
+
+        // Get all the jobList where jobTitle not equals to UPDATED_JOB_TITLE
+        defaultJobShouldBeFound("jobTitle.notEquals=" + UPDATED_JOB_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByJobTitleIsInShouldWork() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where jobTitle in DEFAULT_JOB_TITLE or UPDATED_JOB_TITLE
+        defaultJobShouldBeFound("jobTitle.in=" + DEFAULT_JOB_TITLE + "," + UPDATED_JOB_TITLE);
+
+        // Get all the jobList where jobTitle equals to UPDATED_JOB_TITLE
+        defaultJobShouldNotBeFound("jobTitle.in=" + UPDATED_JOB_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByJobTitleIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where jobTitle is not null
+        defaultJobShouldBeFound("jobTitle.specified=true");
+
+        // Get all the jobList where jobTitle is null
+        defaultJobShouldNotBeFound("jobTitle.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllJobsByJobTitleContainsSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where jobTitle contains DEFAULT_JOB_TITLE
+        defaultJobShouldBeFound("jobTitle.contains=" + DEFAULT_JOB_TITLE);
+
+        // Get all the jobList where jobTitle contains UPDATED_JOB_TITLE
+        defaultJobShouldNotBeFound("jobTitle.contains=" + UPDATED_JOB_TITLE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByJobTitleNotContainsSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where jobTitle does not contain DEFAULT_JOB_TITLE
+        defaultJobShouldNotBeFound("jobTitle.doesNotContain=" + DEFAULT_JOB_TITLE);
+
+        // Get all the jobList where jobTitle does not contain UPDATED_JOB_TITLE
+        defaultJobShouldBeFound("jobTitle.doesNotContain=" + UPDATED_JOB_TITLE);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary equals to DEFAULT_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.equals=" + DEFAULT_MIN_SALARY);
+
+        // Get all the jobList where minSalary equals to UPDATED_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.equals=" + UPDATED_MIN_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary not equals to DEFAULT_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.notEquals=" + DEFAULT_MIN_SALARY);
+
+        // Get all the jobList where minSalary not equals to UPDATED_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.notEquals=" + UPDATED_MIN_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsInShouldWork() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary in DEFAULT_MIN_SALARY or UPDATED_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.in=" + DEFAULT_MIN_SALARY + "," + UPDATED_MIN_SALARY);
+
+        // Get all the jobList where minSalary equals to UPDATED_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.in=" + UPDATED_MIN_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary is not null
+        defaultJobShouldBeFound("minSalary.specified=true");
+
+        // Get all the jobList where minSalary is null
+        defaultJobShouldNotBeFound("minSalary.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsGreaterThanOrEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary is greater than or equal to DEFAULT_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.greaterThanOrEqual=" + DEFAULT_MIN_SALARY);
+
+        // Get all the jobList where minSalary is greater than or equal to UPDATED_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.greaterThanOrEqual=" + UPDATED_MIN_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsLessThanOrEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary is less than or equal to DEFAULT_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.lessThanOrEqual=" + DEFAULT_MIN_SALARY);
+
+        // Get all the jobList where minSalary is less than or equal to SMALLER_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.lessThanOrEqual=" + SMALLER_MIN_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsLessThanSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary is less than DEFAULT_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.lessThan=" + DEFAULT_MIN_SALARY);
+
+        // Get all the jobList where minSalary is less than UPDATED_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.lessThan=" + UPDATED_MIN_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMinSalaryIsGreaterThanSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where minSalary is greater than DEFAULT_MIN_SALARY
+        defaultJobShouldNotBeFound("minSalary.greaterThan=" + DEFAULT_MIN_SALARY);
+
+        // Get all the jobList where minSalary is greater than SMALLER_MIN_SALARY
+        defaultJobShouldBeFound("minSalary.greaterThan=" + SMALLER_MIN_SALARY);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary equals to DEFAULT_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.equals=" + DEFAULT_MAX_SALARY);
+
+        // Get all the jobList where maxSalary equals to UPDATED_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.equals=" + UPDATED_MAX_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary not equals to DEFAULT_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.notEquals=" + DEFAULT_MAX_SALARY);
+
+        // Get all the jobList where maxSalary not equals to UPDATED_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.notEquals=" + UPDATED_MAX_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsInShouldWork() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary in DEFAULT_MAX_SALARY or UPDATED_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.in=" + DEFAULT_MAX_SALARY + "," + UPDATED_MAX_SALARY);
+
+        // Get all the jobList where maxSalary equals to UPDATED_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.in=" + UPDATED_MAX_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary is not null
+        defaultJobShouldBeFound("maxSalary.specified=true");
+
+        // Get all the jobList where maxSalary is null
+        defaultJobShouldNotBeFound("maxSalary.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsGreaterThanOrEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary is greater than or equal to DEFAULT_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.greaterThanOrEqual=" + DEFAULT_MAX_SALARY);
+
+        // Get all the jobList where maxSalary is greater than or equal to UPDATED_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.greaterThanOrEqual=" + UPDATED_MAX_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsLessThanOrEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary is less than or equal to DEFAULT_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.lessThanOrEqual=" + DEFAULT_MAX_SALARY);
+
+        // Get all the jobList where maxSalary is less than or equal to SMALLER_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.lessThanOrEqual=" + SMALLER_MAX_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsLessThanSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary is less than DEFAULT_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.lessThan=" + DEFAULT_MAX_SALARY);
+
+        // Get all the jobList where maxSalary is less than UPDATED_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.lessThan=" + UPDATED_MAX_SALARY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobsByMaxSalaryIsGreaterThanSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+
+        // Get all the jobList where maxSalary is greater than DEFAULT_MAX_SALARY
+        defaultJobShouldNotBeFound("maxSalary.greaterThan=" + DEFAULT_MAX_SALARY);
+
+        // Get all the jobList where maxSalary is greater than SMALLER_MAX_SALARY
+        defaultJobShouldBeFound("maxSalary.greaterThan=" + SMALLER_MAX_SALARY);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobsByTaskIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+        Task task = TaskResourceIT.createEntity(em);
+        em.persist(task);
+        em.flush();
+        job.addTask(task);
+        jobRepository.saveAndFlush(job);
+        Long taskId = task.getId();
+
+        // Get all the jobList where task equals to taskId
+        defaultJobShouldBeFound("taskId.equals=" + taskId);
+
+        // Get all the jobList where task equals to taskId + 1
+        defaultJobShouldNotBeFound("taskId.equals=" + (taskId + 1));
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobsByEmployeeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobRepository.saveAndFlush(job);
+        Employee employee = EmployeeResourceIT.createEntity(em);
+        em.persist(employee);
+        em.flush();
+        job.setEmployee(employee);
+        jobRepository.saveAndFlush(job);
+        Long employeeId = employee.getId();
+
+        // Get all the jobList where employee equals to employeeId
+        defaultJobShouldBeFound("employeeId.equals=" + employeeId);
+
+        // Get all the jobList where employee equals to employeeId + 1
+        defaultJobShouldNotBeFound("employeeId.equals=" + (employeeId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultJobShouldBeFound(String filter) throws Exception {
+        restJobMockMvc.perform(get("/api/jobs?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(job.getId().intValue())))
+            .andExpect(jsonPath("$.[*].jobTitle").value(hasItem(DEFAULT_JOB_TITLE)))
+            .andExpect(jsonPath("$.[*].minSalary").value(hasItem(DEFAULT_MIN_SALARY.intValue())))
+            .andExpect(jsonPath("$.[*].maxSalary").value(hasItem(DEFAULT_MAX_SALARY.intValue())));
+
+        // Check, that the count call also returns 1
+        restJobMockMvc.perform(get("/api/jobs/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultJobShouldNotBeFound(String filter) throws Exception {
+        restJobMockMvc.perform(get("/api/jobs?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restJobMockMvc.perform(get("/api/jobs/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingJob() throws Exception {
@@ -194,7 +594,7 @@ public class JobResourceIT {
     @Transactional
     public void updateJob() throws Exception {
         // Initialize the database
-        jobRepository.saveAndFlush(job);
+        jobService.save(job);
 
         int databaseSizeBeforeUpdate = jobRepository.findAll().size();
 
@@ -241,7 +641,7 @@ public class JobResourceIT {
     @Transactional
     public void deleteJob() throws Exception {
         // Initialize the database
-        jobRepository.saveAndFlush(job);
+        jobService.save(job);
 
         int databaseSizeBeforeDelete = jobRepository.findAll().size();
 

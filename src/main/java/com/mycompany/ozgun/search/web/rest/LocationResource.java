@@ -3,6 +3,8 @@ package com.mycompany.ozgun.search.web.rest;
 import com.mycompany.ozgun.search.domain.Location;
 import com.mycompany.ozgun.search.service.LocationService;
 import com.mycompany.ozgun.search.web.rest.errors.BadRequestAlertException;
+import com.mycompany.ozgun.search.service.dto.LocationCriteria;
+import com.mycompany.ozgun.search.service.LocationQueryService;
 
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -33,8 +35,11 @@ public class LocationResource {
 
     private final LocationService locationService;
 
-    public LocationResource(LocationService locationService) {
+    private final LocationQueryService locationQueryService;
+
+    public LocationResource(LocationService locationService, LocationQueryService locationQueryService) {
         this.locationService = locationService;
+        this.locationQueryService = locationQueryService;
     }
 
     /**
@@ -80,12 +85,26 @@ public class LocationResource {
     /**
      * {@code GET  /locations} : get all the locations.
      *
+     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of locations in body.
      */
     @GetMapping("/locations")
-    public List<Location> getAllLocations() {
-        log.debug("REST request to get all Locations");
-        return locationService.findAll();
+    public ResponseEntity<List<Location>> getAllLocations(LocationCriteria criteria) {
+        log.debug("REST request to get Locations by criteria: {}", criteria);
+        List<Location> entityList = locationQueryService.findByCriteria(criteria);
+        return ResponseEntity.ok().body(entityList);
+    }
+
+    /**
+     * {@code GET  /locations/count} : count all the locations.
+     *
+     * @param criteria the criteria which the requested entities should match.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
+     */
+    @GetMapping("/locations/count")
+    public ResponseEntity<Long> countLocations(LocationCriteria criteria) {
+        log.debug("REST request to count Locations by criteria: {}", criteria);
+        return ResponseEntity.ok().body(locationQueryService.countByCriteria(criteria));
     }
 
     /**

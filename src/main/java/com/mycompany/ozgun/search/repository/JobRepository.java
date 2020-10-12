@@ -15,7 +15,7 @@ import java.util.Optional;
  * Spring Data  repository for the Job entity.
  */
 @Repository
-public interface JobRepository extends JpaRepository<Job, Long> {
+public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
 
     @Query(value = "select distinct job from Job job left join fetch job.tasks",
         countQuery = "select count(distinct job) from Job job")

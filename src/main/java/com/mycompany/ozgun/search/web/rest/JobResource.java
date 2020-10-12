@@ -1,8 +1,10 @@
 package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.domain.Job;
-import com.mycompany.ozgun.search.repository.JobRepository;
+import com.mycompany.ozgun.search.service.JobService;
 import com.mycompany.ozgun.search.web.rest.errors.BadRequestAlertException;
+import com.mycompany.ozgun.search.service.dto.JobCriteria;
+import com.mycompany.ozgun.search.service.JobQueryService;
 
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.PaginationUtil;
@@ -16,7 +18,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -29,7 +30,6 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api")
-@Transactional
 public class JobResource {
 
     private final Logger log = LoggerFactory.getLogger(JobResource.class);
@@ -39,10 +39,13 @@ public class JobResource {
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
-    private final JobRepository jobRepository;
+    private final JobService jobService;
 
-    public JobResource(JobRepository jobRepository) {
-        this.jobRepository = jobRepository;
+    private final JobQueryService jobQueryService;
+
+    public JobResource(JobService jobService, JobQueryService jobQueryService) {
+        this.jobService = jobService;
+        this.jobQueryService = jobQueryService;
     }
 
     /**
@@ -58,7 +61,7 @@ public class JobResource {
         if (job.getId() != null) {
             throw new BadRequestAlertException("A new job cannot already have an ID", ENTITY_NAME, "idexists");
         }
-        Job result = jobRepository.save(job);
+        Job result = jobService.save(job);
         return ResponseEntity.created(new URI("/api/jobs/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
             .body(result);
@@ -79,7 +82,7 @@ public class JobResource {
         if (job.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
-        Job result = jobRepository.save(job);
+        Job result = jobService.save(job);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, job.getId().toString()))
             .body(result);
@@ -89,20 +92,27 @@ public class JobResource {
      * {@code GET  /jobs} : get all the jobs.
      *
      * @param pageable the pagination information.
-     * @param eagerload flag to eager load entities from relationships (This is applicable for many-to-many).
+     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of jobs in body.
      */
     @GetMapping("/jobs")
-    public ResponseEntity<List<Job>> getAllJobs(Pageable pageable, @RequestParam(required = false, defaultValue = "false") boolean eagerload) {
-        log.debug("REST request to get a page of Jobs");
-        Page<Job> page;
-        if (eagerload) {
-            page = jobRepository.findAllWithEagerRelationships(pageable);
-        } else {
-            page = jobRepository.findAll(pageable);
-        }
+    public ResponseEntity<List<Job>> getAllJobs(JobCriteria criteria, Pageable pageable) {
+        log.debug("REST request to get Jobs by criteria: {}", criteria);
+        Page<Job> page = jobQueryService.findByCriteria(criteria, pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+     * {@code GET  /jobs/count} : count all the jobs.
+     *
+     * @param criteria the criteria which the requested entities should match.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
+     */
+    @GetMapping("/jobs/count")
+    public ResponseEntity<Long> countJobs(JobCriteria criteria) {
+        log.debug("REST request to count Jobs by criteria: {}", criteria);
+        return ResponseEntity.ok().body(jobQueryService.countByCriteria(criteria));
     }
 
     /**
@@ -114,7 +124,7 @@ public class JobResource {
     @GetMapping("/jobs/{id}")
     public ResponseEntity<Job> getJob(@PathVariable Long id) {
         log.debug("REST request to get Job : {}", id);
-        Optional<Job> job = jobRepository.findOneWithEagerRelationships(id);
+        Optional<Job> job = jobService.findOne(id);
         return ResponseUtil.wrapOrNotFound(job);
     }
 
@@ -127,7 +137,7 @@ public class JobResource {
     @DeleteMapping("/jobs/{id}")
     public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
         log.debug("REST request to delete Job : {}", id);
-        jobRepository.deleteById(id);
+        jobService.delete(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString())).build();
     }
 }

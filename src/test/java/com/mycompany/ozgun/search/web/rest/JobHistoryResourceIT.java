@@ -2,8 +2,13 @@ package com.mycompany.ozgun.search.web.rest;
 
 import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.JobHistory;
+import com.mycompany.ozgun.search.domain.Job;
+import com.mycompany.ozgun.search.domain.Department;
+import com.mycompany.ozgun.search.domain.Employee;
 import com.mycompany.ozgun.search.repository.JobHistoryRepository;
 import com.mycompany.ozgun.search.service.JobHistoryService;
+import com.mycompany.ozgun.search.service.dto.JobHistoryCriteria;
+import com.mycompany.ozgun.search.service.JobHistoryQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +52,9 @@ public class JobHistoryResourceIT {
 
     @Autowired
     private JobHistoryService jobHistoryService;
+
+    @Autowired
+    private JobHistoryQueryService jobHistoryQueryService;
 
     @Autowired
     private EntityManager em;
@@ -158,6 +166,278 @@ public class JobHistoryResourceIT {
             .andExpect(jsonPath("$.endDate").value(DEFAULT_END_DATE.toString()))
             .andExpect(jsonPath("$.language").value(DEFAULT_LANGUAGE.toString()));
     }
+
+
+    @Test
+    @Transactional
+    public void getJobHistoriesByIdFiltering() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        Long id = jobHistory.getId();
+
+        defaultJobHistoryShouldBeFound("id.equals=" + id);
+        defaultJobHistoryShouldNotBeFound("id.notEquals=" + id);
+
+        defaultJobHistoryShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultJobHistoryShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultJobHistoryShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultJobHistoryShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByStartDateIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where startDate equals to DEFAULT_START_DATE
+        defaultJobHistoryShouldBeFound("startDate.equals=" + DEFAULT_START_DATE);
+
+        // Get all the jobHistoryList where startDate equals to UPDATED_START_DATE
+        defaultJobHistoryShouldNotBeFound("startDate.equals=" + UPDATED_START_DATE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByStartDateIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where startDate not equals to DEFAULT_START_DATE
+        defaultJobHistoryShouldNotBeFound("startDate.notEquals=" + DEFAULT_START_DATE);
+
+        // Get all the jobHistoryList where startDate not equals to UPDATED_START_DATE
+        defaultJobHistoryShouldBeFound("startDate.notEquals=" + UPDATED_START_DATE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByStartDateIsInShouldWork() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where startDate in DEFAULT_START_DATE or UPDATED_START_DATE
+        defaultJobHistoryShouldBeFound("startDate.in=" + DEFAULT_START_DATE + "," + UPDATED_START_DATE);
+
+        // Get all the jobHistoryList where startDate equals to UPDATED_START_DATE
+        defaultJobHistoryShouldNotBeFound("startDate.in=" + UPDATED_START_DATE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByStartDateIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where startDate is not null
+        defaultJobHistoryShouldBeFound("startDate.specified=true");
+
+        // Get all the jobHistoryList where startDate is null
+        defaultJobHistoryShouldNotBeFound("startDate.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByEndDateIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where endDate equals to DEFAULT_END_DATE
+        defaultJobHistoryShouldBeFound("endDate.equals=" + DEFAULT_END_DATE);
+
+        // Get all the jobHistoryList where endDate equals to UPDATED_END_DATE
+        defaultJobHistoryShouldNotBeFound("endDate.equals=" + UPDATED_END_DATE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByEndDateIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where endDate not equals to DEFAULT_END_DATE
+        defaultJobHistoryShouldNotBeFound("endDate.notEquals=" + DEFAULT_END_DATE);
+
+        // Get all the jobHistoryList where endDate not equals to UPDATED_END_DATE
+        defaultJobHistoryShouldBeFound("endDate.notEquals=" + UPDATED_END_DATE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByEndDateIsInShouldWork() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where endDate in DEFAULT_END_DATE or UPDATED_END_DATE
+        defaultJobHistoryShouldBeFound("endDate.in=" + DEFAULT_END_DATE + "," + UPDATED_END_DATE);
+
+        // Get all the jobHistoryList where endDate equals to UPDATED_END_DATE
+        defaultJobHistoryShouldNotBeFound("endDate.in=" + UPDATED_END_DATE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByEndDateIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where endDate is not null
+        defaultJobHistoryShouldBeFound("endDate.specified=true");
+
+        // Get all the jobHistoryList where endDate is null
+        defaultJobHistoryShouldNotBeFound("endDate.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByLanguageIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where language equals to DEFAULT_LANGUAGE
+        defaultJobHistoryShouldBeFound("language.equals=" + DEFAULT_LANGUAGE);
+
+        // Get all the jobHistoryList where language equals to UPDATED_LANGUAGE
+        defaultJobHistoryShouldNotBeFound("language.equals=" + UPDATED_LANGUAGE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByLanguageIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where language not equals to DEFAULT_LANGUAGE
+        defaultJobHistoryShouldNotBeFound("language.notEquals=" + DEFAULT_LANGUAGE);
+
+        // Get all the jobHistoryList where language not equals to UPDATED_LANGUAGE
+        defaultJobHistoryShouldBeFound("language.notEquals=" + UPDATED_LANGUAGE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByLanguageIsInShouldWork() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where language in DEFAULT_LANGUAGE or UPDATED_LANGUAGE
+        defaultJobHistoryShouldBeFound("language.in=" + DEFAULT_LANGUAGE + "," + UPDATED_LANGUAGE);
+
+        // Get all the jobHistoryList where language equals to UPDATED_LANGUAGE
+        defaultJobHistoryShouldNotBeFound("language.in=" + UPDATED_LANGUAGE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByLanguageIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+
+        // Get all the jobHistoryList where language is not null
+        defaultJobHistoryShouldBeFound("language.specified=true");
+
+        // Get all the jobHistoryList where language is null
+        defaultJobHistoryShouldNotBeFound("language.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByJobIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+        Job job = JobResourceIT.createEntity(em);
+        em.persist(job);
+        em.flush();
+        jobHistory.setJob(job);
+        jobHistoryRepository.saveAndFlush(jobHistory);
+        Long jobId = job.getId();
+
+        // Get all the jobHistoryList where job equals to jobId
+        defaultJobHistoryShouldBeFound("jobId.equals=" + jobId);
+
+        // Get all the jobHistoryList where job equals to jobId + 1
+        defaultJobHistoryShouldNotBeFound("jobId.equals=" + (jobId + 1));
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByDepartmentIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+        Department department = DepartmentResourceIT.createEntity(em);
+        em.persist(department);
+        em.flush();
+        jobHistory.setDepartment(department);
+        jobHistoryRepository.saveAndFlush(jobHistory);
+        Long departmentId = department.getId();
+
+        // Get all the jobHistoryList where department equals to departmentId
+        defaultJobHistoryShouldBeFound("departmentId.equals=" + departmentId);
+
+        // Get all the jobHistoryList where department equals to departmentId + 1
+        defaultJobHistoryShouldNotBeFound("departmentId.equals=" + (departmentId + 1));
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllJobHistoriesByEmployeeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        jobHistoryRepository.saveAndFlush(jobHistory);
+        Employee employee = EmployeeResourceIT.createEntity(em);
+        em.persist(employee);
+        em.flush();
+        jobHistory.setEmployee(employee);
+        jobHistoryRepository.saveAndFlush(jobHistory);
+        Long employeeId = employee.getId();
+
+        // Get all the jobHistoryList where employee equals to employeeId
+        defaultJobHistoryShouldBeFound("employeeId.equals=" + employeeId);
+
+        // Get all the jobHistoryList where employee equals to employeeId + 1
+        defaultJobHistoryShouldNotBeFound("employeeId.equals=" + (employeeId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultJobHistoryShouldBeFound(String filter) throws Exception {
+        restJobHistoryMockMvc.perform(get("/api/job-histories?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(jobHistory.getId().intValue())))
+            .andExpect(jsonPath("$.[*].startDate").value(hasItem(DEFAULT_START_DATE.toString())))
+            .andExpect(jsonPath("$.[*].endDate").value(hasItem(DEFAULT_END_DATE.toString())))
+            .andExpect(jsonPath("$.[*].language").value(hasItem(DEFAULT_LANGUAGE.toString())));
+
+        // Check, that the count call also returns 1
+        restJobHistoryMockMvc.perform(get("/api/job-histories/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultJobHistoryShouldNotBeFound(String filter) throws Exception {
+        restJobHistoryMockMvc.perform(get("/api/job-histories?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restJobHistoryMockMvc.perform(get("/api/job-histories/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingJobHistory() throws Exception {

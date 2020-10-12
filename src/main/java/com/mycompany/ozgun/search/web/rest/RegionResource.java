@@ -3,6 +3,8 @@ package com.mycompany.ozgun.search.web.rest;
 import com.mycompany.ozgun.search.domain.Region;
 import com.mycompany.ozgun.search.service.RegionService;
 import com.mycompany.ozgun.search.web.rest.errors.BadRequestAlertException;
+import com.mycompany.ozgun.search.service.dto.RegionCriteria;
+import com.mycompany.ozgun.search.service.RegionQueryService;
 
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -33,8 +35,11 @@ public class RegionResource {
 
     private final RegionService regionService;
 
-    public RegionResource(RegionService regionService) {
+    private final RegionQueryService regionQueryService;
+
+    public RegionResource(RegionService regionService, RegionQueryService regionQueryService) {
         this.regionService = regionService;
+        this.regionQueryService = regionQueryService;
     }
 
     /**
@@ -80,12 +85,26 @@ public class RegionResource {
     /**
      * {@code GET  /regions} : get all the regions.
      *
+     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of regions in body.
      */
     @GetMapping("/regions")
-    public List<Region> getAllRegions() {
-        log.debug("REST request to get all Regions");
-        return regionService.findAll();
+    public ResponseEntity<List<Region>> getAllRegions(RegionCriteria criteria) {
+        log.debug("REST request to get Regions by criteria: {}", criteria);
+        List<Region> entityList = regionQueryService.findByCriteria(criteria);
+        return ResponseEntity.ok().body(entityList);
+    }
+
+    /**
+     * {@code GET  /regions/count} : count all the regions.
+     *
+     * @param criteria the criteria which the requested entities should match.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
+     */
+    @GetMapping("/regions/count")
+    public ResponseEntity<Long> countRegions(RegionCriteria criteria) {
+        log.debug("REST request to count Regions by criteria: {}", criteria);
+        return ResponseEntity.ok().body(regionQueryService.countByCriteria(criteria));
     }
 
     /**

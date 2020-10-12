@@ -4,6 +4,8 @@ import com.mycompany.ozgun.search.JhipsterforsearchApp;
 import com.mycompany.ozgun.search.domain.Region;
 import com.mycompany.ozgun.search.repository.RegionRepository;
 import com.mycompany.ozgun.search.service.RegionService;
+import com.mycompany.ozgun.search.service.dto.RegionCriteria;
+import com.mycompany.ozgun.search.service.RegionQueryService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,9 @@ public class RegionResourceIT {
 
     @Autowired
     private RegionService regionService;
+
+    @Autowired
+    private RegionQueryService regionQueryService;
 
     @Autowired
     private EntityManager em;
@@ -139,6 +144,138 @@ public class RegionResourceIT {
             .andExpect(jsonPath("$.id").value(region.getId().intValue()))
             .andExpect(jsonPath("$.regionName").value(DEFAULT_REGION_NAME));
     }
+
+
+    @Test
+    @Transactional
+    public void getRegionsByIdFiltering() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        Long id = region.getId();
+
+        defaultRegionShouldBeFound("id.equals=" + id);
+        defaultRegionShouldNotBeFound("id.notEquals=" + id);
+
+        defaultRegionShouldBeFound("id.greaterThanOrEqual=" + id);
+        defaultRegionShouldNotBeFound("id.greaterThan=" + id);
+
+        defaultRegionShouldBeFound("id.lessThanOrEqual=" + id);
+        defaultRegionShouldNotBeFound("id.lessThan=" + id);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllRegionsByRegionNameIsEqualToSomething() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        // Get all the regionList where regionName equals to DEFAULT_REGION_NAME
+        defaultRegionShouldBeFound("regionName.equals=" + DEFAULT_REGION_NAME);
+
+        // Get all the regionList where regionName equals to UPDATED_REGION_NAME
+        defaultRegionShouldNotBeFound("regionName.equals=" + UPDATED_REGION_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllRegionsByRegionNameIsNotEqualToSomething() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        // Get all the regionList where regionName not equals to DEFAULT_REGION_NAME
+        defaultRegionShouldNotBeFound("regionName.notEquals=" + DEFAULT_REGION_NAME);
+
+        // Get all the regionList where regionName not equals to UPDATED_REGION_NAME
+        defaultRegionShouldBeFound("regionName.notEquals=" + UPDATED_REGION_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllRegionsByRegionNameIsInShouldWork() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        // Get all the regionList where regionName in DEFAULT_REGION_NAME or UPDATED_REGION_NAME
+        defaultRegionShouldBeFound("regionName.in=" + DEFAULT_REGION_NAME + "," + UPDATED_REGION_NAME);
+
+        // Get all the regionList where regionName equals to UPDATED_REGION_NAME
+        defaultRegionShouldNotBeFound("regionName.in=" + UPDATED_REGION_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllRegionsByRegionNameIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        // Get all the regionList where regionName is not null
+        defaultRegionShouldBeFound("regionName.specified=true");
+
+        // Get all the regionList where regionName is null
+        defaultRegionShouldNotBeFound("regionName.specified=false");
+    }
+                @Test
+    @Transactional
+    public void getAllRegionsByRegionNameContainsSomething() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        // Get all the regionList where regionName contains DEFAULT_REGION_NAME
+        defaultRegionShouldBeFound("regionName.contains=" + DEFAULT_REGION_NAME);
+
+        // Get all the regionList where regionName contains UPDATED_REGION_NAME
+        defaultRegionShouldNotBeFound("regionName.contains=" + UPDATED_REGION_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllRegionsByRegionNameNotContainsSomething() throws Exception {
+        // Initialize the database
+        regionRepository.saveAndFlush(region);
+
+        // Get all the regionList where regionName does not contain DEFAULT_REGION_NAME
+        defaultRegionShouldNotBeFound("regionName.doesNotContain=" + DEFAULT_REGION_NAME);
+
+        // Get all the regionList where regionName does not contain UPDATED_REGION_NAME
+        defaultRegionShouldBeFound("regionName.doesNotContain=" + UPDATED_REGION_NAME);
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned.
+     */
+    private void defaultRegionShouldBeFound(String filter) throws Exception {
+        restRegionMockMvc.perform(get("/api/regions?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(region.getId().intValue())))
+            .andExpect(jsonPath("$.[*].regionName").value(hasItem(DEFAULT_REGION_NAME)));
+
+        // Check, that the count call also returns 1
+        restRegionMockMvc.perform(get("/api/regions/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned.
+     */
+    private void defaultRegionShouldNotBeFound(String filter) throws Exception {
+        restRegionMockMvc.perform(get("/api/regions?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restRegionMockMvc.perform(get("/api/regions/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(content().string("0"));
+    }
+
     @Test
     @Transactional
     public void getNonExistingRegion() throws Exception {
